@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OAKE APP</title>
+    <script src="node_modules/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="script.js" defer></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div>
+        <div style="background-color: aliceblue; padding: 10px; ">
+            <form>
+                <label for="id">Id:</label><br>
+                <input type="text" id="id" name="id"><br>
+                <label for="type">Type Event:</label><br>
+                <select id="type" name="type">
+                    <option value="foodtruck">Foodtruck</option>
+                    <option value="banquetting">Banquetting</option>
+                    <option value="walkingdinner">Walking Dinner</option>
+                </select><br>
+            </form>
+            <p>Maak een pdf</p>
+            <button onclick="createPdf()">Create PDF</button>
+        </div>
+        <div>
+        </div>
+    </div>
+</body>
+</html>
