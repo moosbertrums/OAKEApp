@@ -124,17 +124,13 @@ function extractContactInfoFromRelated(item) {
 // 6. PDF genereren
 //----------------------------------------------
 async function createPdf() {
-    const { PDFDocument, StandardFonts } = PDFLib;
+    const { PDFDocument, StandardFonts, rgb } = PDFLib;
 
+    // ---------------- Form data ----------------
     const id = String(document.getElementById("id").value || "").trim();
     const type = String(document.getElementById("type").value || "").trim();
 
-    console.log("FORM ID:", id);
-    console.log("FORM type:", type);
-
     const mondayItems = await getMondayData();
-    console.log("Items opgehaald:", mondayItems.length);
-
     const selectedItem = mondayItems.find(i => String(i.id) === id);
 
     if (!selectedItem) {
@@ -142,74 +138,121 @@ async function createPdf() {
         return;
     }
 
-    console.log("Geselecteerd item:", selectedItem);
+    // ---------------- Load template PDF ----------------
+    const templateBytes = await fetch("template.pdf")
+        .then(res => res.arrayBuffer());
 
-    // ---------------- PDF setup -----------------
-    const pdfDoc = await PDFDocument.create();
-    let page = pdfDoc.addPage([600, 800]);
+    const pdfDoc = await PDFDocument.load(templateBytes);
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    let y = 760;
 
-    function write(text, size = 12, indent = 0) {
-        if (y < 50) {
-            page = pdfDoc.addPage([600, 800]);
-            y = 760;
-        }
-        page.drawText(text, { x: 50 + indent, y, size, font });
-        y -= size + 6;
+    // ---------------- Pages ----------------
+    const pages = pdfDoc.getPages();
+
+    const coverPage = pages[0];
+    const contentPage = pages[1] ?? pdfDoc.addPage();
+
+    // ==================================================
+    // PAGINA 1 – COVER (afbeelding gecentreerd)
+    // ==================================================
+
+    const imageBytes = await fetch("img/Achtergrond licht.png")
+        .then(res => res.arrayBuffer());
+
+    const coverImage = await pdfDoc.embedPng(imageBytes);
+
+    const { width, height } = coverPage.getSize();
+
+    const imgWidth = 320;
+    const imgHeight = (coverImage.height / coverImage.width) * imgWidth;
+
+    const imgX = (width - imgWidth) / 2;
+    const imgY = (height - imgHeight) / 2;
+
+    coverPage.drawImage(coverImage, {
+        x: imgX,
+        y: imgY,
+        width: imgWidth,
+        height: imgHeight
+    });
+
+    // ==================================================
+    // PAGINA 2 – CONTENT
+    // ==================================================
+
+    function draw(text, x, y, size = 10) {
+        if (!text) return;
+        contentPage.drawText(String(text), {
+            x,
+            y,
+            size,
+            font,
+            color: rgb(0, 0, 0)
+        });
     }
 
-    // ---------------- Header -----------------
-    write("Event gegevens", 18);
-    write(`Event ID: ${id}`);
-    write(`Type: ${type}`);
-    write(" ", 8);
+    let y = 780;
 
-    write(selectedItem.name, 14);
-    write(" ", 6);
+    // ---------------- Header ----------------
+    draw("Event gegevens", 50, y, 16);
+    y -= 24;
 
-    // ---------------- Gewone kolommen -----------------
+    draw(`Event ID: ${id}`, 50, y, 10);
+    draw(`Type: ${type}`, 300, y, 10);
+    y -= 20;
+
+    draw(selectedItem.name, 50, y, 14);
+    y -= 24;
+
+    // ---------------- Event kolommen ----------------
     for (const col of selectedItem.column_values) {
         if (col.type === "board_relation") continue;
-        if (!columnLabelMap[col.id]) continue;   // 👈 NIEUW
+        if (!columnLabelMap[col.id]) continue;
         if (!col.text || !col.text.trim()) continue;
 
         const label = columnLabelMap[col.id];
-        write(`${label}: ${col.text}`, 10, 10);
+        draw(`${label}: ${col.text}`, 60, y, 10);
+        y -= 16;
     }
 
-    write(" ", 8);
+    y -= 10;
 
-// ---------------- Contact & Bedrijf -----------------
+    // ---------------- Contact & Bedrijf ----------------
     const contacts = getBoardRelation(selectedItem, "deal_contact");
     const printedAccounts = new Set();
 
     for (const contact of contacts) {
-        // Contactpersoon
-        write(`Contactpersoon: ${contact.name}`, 10, 10);
+        draw(`Contactpersoon: ${contact.name}`, 50, y, 10);
+        y -= 14;
 
         const info = extractContactInfoFromRelated(contact);
-        if (info.email) write(`Email: ${info.email}`, 10, 20);
-        if (info.phone) write(`Tel: ${info.phone}`, 10, 20);
+        if (info.email) {
+            draw(`Email: ${info.email}`, 60, y, 10);
+            y -= 14;
+        }
+        if (info.phone) {
+            draw(`Tel: ${info.phone}`, 60, y, 10);
+            y -= 14;
+        }
 
-        // Bedrijf(ven) via contact
         const accounts = getNestedBoardRelation(contact, "contact_account");
-
         for (const account of accounts) {
             if (printedAccounts.has(account.id)) continue;
             printedAccounts.add(account.id);
 
-            write(`Bedrijf: ${account.name}`, 10, 20);
+            draw(`Bedrijf: ${account.name}`, 60, y, 10);
+            y -= 14;
         }
 
-        write(" ", 6); // kleine spacing tussen contacten
+        y -= 10;
     }
 
-    // ---------------- Save PDF -----------------
+    // ---------------- Save PDF ----------------
     const bytes = await pdfDoc.save();
     const blob = new Blob([bytes], { type: "application/pdf" });
+
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = `Event_${id}.pdf`;
     link.click();
 }
+
