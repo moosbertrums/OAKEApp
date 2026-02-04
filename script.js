@@ -138,50 +138,34 @@ async function createPdf() {
         return;
     }
 
-    // ---------------- Load template PDF ----------------
+    // ---------------- Load template ----------------
     const templateBytes = await fetch("template.pdf")
         .then(res => res.arrayBuffer());
 
     const pdfDoc = await PDFDocument.load(templateBytes);
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-    // ---------------- Pages ----------------
+    // ==================================================
+    // PAGES SETUP
+    // ==================================================
+
     const pages = pdfDoc.getPages();
 
-    const coverPage = pages[0];
-    const contentPage = pages[1] ?? pdfDoc.addPage();
+    const page1 = pages[0];                  // Foto A
+    const page2 = pages[1];         // Tekst A + Projectbeschrijving
+    const page3 = pages[2];           // Tekst B + extra info
+    const page4 = pages[3];
+    const page5 = pages[4];
+    // page 4 & 5 komen later (PDF import)
+    const page6 = pages[5];           // Foto B
 
     // ==================================================
-    // PAGINA 1 – COVER (afbeelding gecentreerd)
+    // HELPERS
     // ==================================================
 
-    const imageBytes = await fetch("img/Achtergrond licht.png")
-        .then(res => res.arrayBuffer());
-
-    const coverImage = await pdfDoc.embedPng(imageBytes);
-
-    const { width, height } = coverPage.getSize();
-
-    const imgWidth = 320;
-    const imgHeight = (coverImage.height / coverImage.width) * imgWidth;
-
-    const imgX = (width - imgWidth) / 2;
-    const imgY = (height - imgHeight) / 2;
-
-    coverPage.drawImage(coverImage, {
-        x: imgX,
-        y: imgY,
-        width: imgWidth,
-        height: imgHeight
-    });
-
-    // ==================================================
-    // PAGINA 2 – CONTENT
-    // ==================================================
-
-    function draw(text, x, y, size = 10) {
+    function draw(page, text, x, y, size = 10) {
         if (!text) return;
-        contentPage.drawText(String(text), {
+        page.drawText(String(text), {
             x,
             y,
             size,
@@ -190,63 +174,104 @@ async function createPdf() {
         });
     }
 
-    let y = 780;
+    async function drawCenteredImage(page, imagePath, maxWidth = 320) {
+        const imageBytes = await fetch(imagePath).then(r => r.arrayBuffer());
+        const image = await pdfDoc.embedPng(imageBytes);
 
-    // ---------------- Header ----------------
-    draw("Event gegevens", 50, y, 16);
-    y -= 24;
+        const { width, height } = page.getSize();
 
-    draw(`Event ID: ${id}`, 50, y, 10);
-    draw(`Type: ${type}`, 300, y, 10);
-    y -= 20;
+        const imgWidth = maxWidth;
+        const imgHeight = (image.height / image.width) * imgWidth;
 
-    draw(selectedItem.name, 50, y, 14);
-    y -= 24;
+        const x = (width - imgWidth) / 2;
+        const y = (height - imgHeight) / 2;
 
-    // ---------------- Event kolommen ----------------
+        page.drawImage(image, {
+            x,
+            y,
+            width: imgWidth,
+            height: imgHeight
+        });
+    }
+
+    // ==================================================
+    // PAGINA 1 – FOTO A
+    // ==================================================
+
+    await drawCenteredImage(page1, "placeholders/foto-a.png");
+
+    // ==================================================
+    // PAGINA 2 – TEKST A + PROJECTBESCHRIJVING
+    // ==================================================
+
+    let y2 = 760;
+
+    draw(page2, "Tekst A (placeholder)", 60, y2, 14);
+    y2 -= 30;
+
+    draw(page2, "Projectbeschrijving", 60, y2, 16);
+    y2 -= 26;
+
     for (const col of selectedItem.column_values) {
-        if (col.type === "board_relation") continue;
         if (!columnLabelMap[col.id]) continue;
         if (!col.text || !col.text.trim()) continue;
 
         const label = columnLabelMap[col.id];
-        draw(`${label}: ${col.text}`, 60, y, 10);
-        y -= 16;
+        draw(page2, `${label}: ${col.text}`, 60, y2, 10);
+        y2 -= 16;
     }
 
-    y -= 10;
+    // ==================================================
+    // PAGINA 3 – TEKST B + EXTRA INFO
+    // ==================================================
 
-    // ---------------- Contact & Bedrijf ----------------
-    const contacts = getBoardRelation(selectedItem, "deal_contact");
-    const printedAccounts = new Set();
+    let y3 = 760;
 
-    for (const contact of contacts) {
-        draw(`Contactpersoon: ${contact.name}`, 50, y, 10);
-        y -= 14;
+    draw(page3, "Tekst B (placeholder)", 60, y3, 14);
+    y3 -= 30;
 
-        const info = extractContactInfoFromRelated(contact);
-        if (info.email) {
-            draw(`Email: ${info.email}`, 60, y, 10);
-            y -= 14;
-        }
-        if (info.phone) {
-            draw(`Tel: ${info.phone}`, 60, y, 10);
-            y -= 14;
-        }
+    draw(page3, "Extra informatie (placeholder)", 60, y3, 10);
 
-        const accounts = getNestedBoardRelation(contact, "contact_account");
-        for (const account of accounts) {
-            if (printedAccounts.has(account.id)) continue;
-            printedAccounts.add(account.id);
+    // ==================================================
+    // PAGINA 4 – OFFERTE (PDF uit Monday)
+    // ==================================================
 
-            draw(`Bedrijf: ${account.name}`, 60, y, 10);
-            y -= 14;
-        }
+    const offertePdfBytes = await fetch("placeholders/offerte.pdf")
+        .then(r => r.arrayBuffer());
 
-        y -= 10;
-    }
+    const offertePdf = await PDFDocument.load(offertePdfBytes);
 
-    // ---------------- Save PDF ----------------
+    // pak de EERSTE pagina van de offerte
+    const [offertePage] = await pdfDoc.copyPages(offertePdf, [0]);
+
+    // vervang template pagina 4 (index 3)
+    pdfDoc.removePage(3);
+    pdfDoc.insertPage(3, offertePage);
+
+    // ==================================================
+    // PAGINA 5 – ALGEMENE VOORWAARDEN (PDF uit Monday)
+    // ==================================================
+
+    const avPdfBytes = await fetch("placeholders/algemene-voorwaarden.pdf")
+        .then(r => r.arrayBuffer());
+
+    const avPdf = await PDFDocument.load(avPdfBytes);
+
+    const [avPage] = await pdfDoc.copyPages(avPdf, [0]);
+
+    pdfDoc.removePage(4);
+    pdfDoc.insertPage(4, avPage);
+
+    // ==================================================
+    // PAGINA 6 – FOTO B
+    // ==================================================
+
+    await drawCenteredImage(page6, "placeholders/foto-b.png");
+
+    // ==================================================
+    // SAVE
+    // ==================================================
+
     const bytes = await pdfDoc.save();
     const blob = new Blob([bytes], { type: "application/pdf" });
 
@@ -255,4 +280,3 @@ async function createPdf() {
     link.download = `Event_${id}.pdf`;
     link.click();
 }
-
