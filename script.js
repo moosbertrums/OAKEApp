@@ -1,25 +1,27 @@
-//----------------------------------------------
-// 1. Label mapping voor nette namen in de PDF
-//----------------------------------------------
+    //----------------------------------------------
+    // Label mapping
+    //----------------------------------------------
+
 const columnLabelMap = {
-    deal_expected_close_date: "Verwachte afsluitdatum",
+//    deal_expected_close_date: "Verwachte afsluitdatum",
     wereldklok1: "Tijdstip",
     locatie: "Locatie",
-    deal_stage: "Sales status",
-    deal_owner: "Eigenaar",
-    status4: "Aanvraagstatus",
-    lange_tekst0__1: "Omschrijving",
-    deal_creation_date: "Aanmaakdatum",
-    deal_close_date: "Sluitdatum",
+//    deal_stage: "Sales status",
+    deal_owner: "OAKE Contactpersoon",
+//    status4: "Aanvraagstatus",
+//    lange_tekst0__1: "Omschrijving",
+//    deal_creation_date: "Aanmaakdatum",
+//    deal_close_date: "Sluitdatum",
     nummers7: "PAX Lunch",
     nummers5: "PAX Diner",
     nummers4: "PAX Drank",
     dup__of_pax_diner: "PAX Overig",
 };
 
-//----------------------------------------------
-// 2. Backend proxy fetch
-//----------------------------------------------
+    //----------------------------------------------
+    // Backend proxy fetch
+    //----------------------------------------------
+
 async function mondayFetch(query) {
     const res = await fetch("http://localhost:3000/monday", {
         method: "POST",
@@ -36,9 +38,10 @@ async function mondayFetch(query) {
     return json;
 }
 
-//----------------------------------------------
-// 3. Haal hoofdboard op (MET linked_items)
-//----------------------------------------------
+    //----------------------------------------------
+    // Haal hoofdboard op
+    //----------------------------------------------
+
 async function getMondayData() {
     const query = `
         {
@@ -51,7 +54,7 @@ async function getMondayData() {
                             id
                             type
                             text
-
+                            value
                             ... on BoardRelationValue {
                                 linked_items {
                                     id
@@ -81,9 +84,10 @@ async function getMondayData() {
     return res?.data?.boards?.[0]?.items_page?.items ?? [];
 }
 
-//----------------------------------------------
-// Helpers voor board relations
-//----------------------------------------------
+    //----------------------------------------------
+    // Helpers voor board relations
+    //----------------------------------------------
+
 function getBoardRelationItems(item, columnId) {
     return (
         item?.column_values?.find(
@@ -92,9 +96,6 @@ function getBoardRelationItems(item, columnId) {
     );
 }
 
-//----------------------------------------------
-//
-//----------------------------------------------
 function extractContactInfoFromRelated(item) {
     if (!item || !item.column_values) return {};
 
@@ -124,9 +125,10 @@ function extractContactInfoFromRelated(item) {
 
 }
 
-//----------------------------------------------
-// Template board ophalen
-//----------------------------------------------
+    //----------------------------------------------
+    // Template board ophalen
+    //----------------------------------------------
+
 async function getTemplates() {
 
     const query = `
@@ -134,7 +136,6 @@ async function getTemplates() {
         boards(ids: 5093227258) {
             items_page(limit: 200) {
                 items {
-                 
                     id
                     name
                     column_values {
@@ -152,9 +153,9 @@ async function getTemplates() {
     return res?.data?.boards?.[0]?.items_page?.items ?? [];
 }
 
-//----------------------------------------------
-// 5. Helpers
-//----------------------------------------------
+    //----------------------------------------------
+    // Helpers
+    //----------------------------------------------
 function getColumnText(item, columnId) {
     return item.column_values?.find(c => c.id === columnId)?.text || "";
 }
@@ -178,9 +179,10 @@ function getFileAssetId(item, columnId) {
     return null;
 }
 
-//----------------------------------------------
-// 6. Template dropdown
-//----------------------------------------------
+    //----------------------------------------------
+    // Template dropdown
+    //----------------------------------------------
+
 let cachedTemplates = [];
 
 async function loadTemplateDropdown() {
@@ -204,28 +206,25 @@ async function loadTemplateDropdown() {
 
 loadTemplateDropdown();
 
-//----------------------------------------------
-// 7. PDF genereren
-//----------------------------------------------
+    //----------------------------------------------
+    // PDF genereren
+    //----------------------------------------------
+
 async function createPdf() {
 
     const { PDFDocument, StandardFonts, rgb } = PDFLib;
-
     const id = String(document.getElementById("id").value || "").trim();
     const templateId = document.getElementById("templateSelect").value;
-
     const mondayItems = await getMondayData();
     const selectedItem = mondayItems.find(i => String(i.id) === id);
-
+    console.log("MONDAY DATA:", selectedItem);
     if (!selectedItem) {
         alert("Geen event item gevonden");
         return;
     }
 
     const selectedTemplate = cachedTemplates.find(t => t.id === templateId);
-    console.log("SELECTED TEMPLATE:", selectedTemplate);
-    console.log("FILE COL FULL:", JSON.stringify(selectedTemplate.column_values, null, 2));
-    console.log("TEMPLATE AFTER FIX:", selectedTemplate.column_values);
+    console.log("TEMPLATE DATA:", selectedTemplate);
 
     if (!selectedTemplate) {
         alert("Geen template gevonden");
@@ -235,6 +234,7 @@ async function createPdf() {
     //----------------------------------------------
     // TEMPLATE COLUMN MAP
     //----------------------------------------------
+
     const templateColumnMap = {
         tekstA: "text_mm1g5aqc",
         tekstB: "text_mm1gwwxn",
@@ -252,17 +252,6 @@ async function createPdf() {
     const fotoA = getFileAssetId(selectedTemplate, templateColumnMap.fotoA);
     const fotoB = getFileAssetId(selectedTemplate, templateColumnMap.fotoB);
     const avFile = getFileAssetId(selectedTemplate, templateColumnMap.av);
-
-    console.log("fotoA:", fotoA);
-    console.log("fotoB:", fotoB);
-    console.log("avFile:", avFile);
-    console.log({
-        tekstA,
-        tekstB,
-        fotoA,
-        fotoB,
-        avFile
-    });
 
     //----------------------------------------------
     // Template PDF laden
@@ -284,6 +273,19 @@ async function createPdf() {
     const page5 = pages[4];
     const page6 = pages[5];
 
+    const styles = {
+        title: { size: 16, lineHeight: 22 },
+        subtitle: { size: 14, lineHeight: 18 },
+        body: { size: 10, lineHeight: 14 },
+        small: { size: 9, lineHeight: 12 }
+    };
+
+    const spacing = {
+        section: 20,
+        block: 12,
+        line: 6
+    };
+
     //----------------------------------------------
     // Helpers
     //----------------------------------------------
@@ -301,7 +303,35 @@ async function createPdf() {
         });
     }
 
-    async function drawCenteredImage(page, assetId, maxWidth = 320) {
+    function drawWrappedText(page, text, x, y, maxWidth, size = 10, lineHeight = 14) {
+
+        if (!text) return y;
+
+        const words = text.split(" ");
+        let line = "";
+
+        for (let i = 0; i < words.length; i++) {
+            const testLine = line + words[i] + " ";
+            const width = font.widthOfTextAtSize(testLine, size);
+
+            if (width > maxWidth && i > 0) {
+                page.drawText(line, { x, y, size, font });
+                line = words[i] + " ";
+                y -= lineHeight;
+            } else {
+                line = testLine;
+            }
+        }
+
+        if (line) {
+            page.drawText(line, { x, y, size, font });
+            y -= lineHeight;
+        }
+
+        return y;
+    }
+
+    async function drawCenteredImage(page, assetId, widthPadding = 50, heightPadding = 100) {
 
         if (!assetId) {
             console.log("Geen image assetId");
@@ -309,7 +339,6 @@ async function createPdf() {
         }
 
         const proxyUrl = `http://localhost:3000/file-by-asset?assetId=${assetId}`;
-
         const bytes = await fetch(proxyUrl).then(r => r.arrayBuffer());
 
         let image;
@@ -322,12 +351,25 @@ async function createPdf() {
 
         const { width, height } = page.getSize();
 
-        const imgWidth = maxWidth;
-        const imgHeight = (image.height / image.width) * imgWidth;
+        // 🔥 beschikbare ruimte
+        const maxWidth = width - widthPadding * 2;
+        const maxHeight = height - heightPadding * 2;
+
+        // 🔥 schaal berekenen (fit binnen box)
+        const scale = Math.min(
+            maxWidth / image.width,
+            maxHeight / image.height
+        );
+
+        const imgWidth = image.width * scale;
+        const imgHeight = image.height * scale;
+
+        const x = (width - imgWidth) / 2;
+        const y = (height - imgHeight) / 2;
 
         page.drawImage(image, {
-            x: (width - imgWidth) / 2,
-            y: (height - imgHeight) / 2,
+            x,
+            y,
             width: imgWidth,
             height: imgHeight
         });
@@ -339,58 +381,26 @@ async function createPdf() {
 
     await drawCenteredImage(page1, fotoA);
 
+
     //----------------------------------------------
     // PAGINA 2 – TEKST A + EVENT INFO
     //----------------------------------------------
 
     let y2 = 760;
 
-    draw(page2, tekstA, 60, y2, 14);
-    y2 -= 30;
+    draw(page2, selectedTemplate.name, 60, y2, styles.title.size);
+    y2 -= spacing.block;
+    y2 = drawWrappedText(page2, tekstA, 60, y2, 480, styles.body.size, styles.body.lineHeight);
+    y2 -= spacing.block;
 
-    draw(page2, "Projectbeschrijving", 60, y2, 16);
-    y2 -= 26;
-
-    for (const col of selectedItem.column_values) {
-
-        if (!columnLabelMap[col.id]) continue;
-        if (!col.text) continue;
-
-        const label = columnLabelMap[col.id];
-
-        draw(page2, `${label}: ${col.text}`, 60, y2, 10);
-
-        y2 -= 16;
-    }
-
-    //----------------------------------------------
-    // CONTACTEN & BEDRIJVEN
-    //----------------------------------------------
-
-    y2 -= 10;
+    draw(page2, "Projectbeschrijving", 60, y2, styles.title.size);
+    y2 -= spacing.block;
 
     const contacts = getBoardRelationItems(selectedItem, "deal_contact");
     const printedAccounts = new Set();
 
     for (const contact of contacts) {
 
-        // Contactpersoon naam
-        draw(page2, `Contactpersoon: ${contact.name}`, 60, y2, 10);
-        y2 -= 14;
-
-        const info = extractContactInfoFromRelated(contact);
-
-        if (info.email) {
-            draw(page2, `Email: ${info.email}`, 70, y2, 10);
-            y2 -= 14;
-        }
-
-        if (info.phone) {
-            draw(page2, `Tel: ${info.phone}`, 70, y2, 10);
-            y2 -= 14;
-        }
-
-        // Bedrijf ophalen via contact
         const accounts = getBoardRelationItems(contact, "contact_account");
 
         for (const account of accounts) {
@@ -399,33 +409,54 @@ async function createPdf() {
 
             printedAccounts.add(account.id);
 
-            draw(page2, `Bedrijf: ${account.name}`, 70, y2, 10);
-            y2 -= 14;
+            y2 = drawWrappedText(page2, `Bedrijf: ${account.name}`, 60, y2, 470);
         }
 
-        y2 -= 10; // spacing tussen contacten
+        y2 = drawWrappedText(page2, `Contactpersoon: ${contact.name}`, 60, y2, 480);
+
+        const info = extractContactInfoFromRelated(contact);
+
+        if (info.email) {
+            y2 = drawWrappedText(page2, `Email: ${info.email}`, 60, y2, 470);
+        }
+
+        if (info.phone) {
+            y2 = drawWrappedText(page2, `Tel: ${info.phone}`, 60, y2, 470);
+        }
+
+
+
     }
+
+    for (const col of selectedItem.column_values) {
+
+        if (!columnLabelMap[col.id]) continue;
+        if (!col.text) continue;
+
+        const label = columnLabelMap[col.id];
+
+        y2 = drawWrappedText(
+            page2,
+            `${label}: ${col.text}`,
+            60,
+            y2,
+            480,
+            styles.body.size,
+            styles.body.lineHeight
+        );
+    }
+
+
     //----------------------------------------------
     // PAGINA 3 – TEKST B
     //----------------------------------------------
 
     let y3 = 760;
 
-    draw(page3, tekstB, 60, y3, 14);
+    draw(page3, "Over het project", 60, y3, styles.title.size);
+    y3 -= spacing.block;
+    y3 = drawWrappedText(page3, tekstB, 60, y3, 480, styles.body.size, styles.body.lineHeight);
 
-    //----------------------------------------------
-    // PAGINA 4 – OFFERTE placeholder
-    //----------------------------------------------
-
-    const offertePdfBytes = await fetch("placeholders/offerte.pdf")
-        .then(r => r.arrayBuffer());
-
-    const offertePdf = await PDFDocument.load(offertePdfBytes);
-
-    const [offertePage] = await pdfDoc.copyPages(offertePdf, [0]);
-
-    pdfDoc.removePage(3);
-    pdfDoc.insertPage(3, offertePage);
 
     //----------------------------------------------
     // PAGINA 5 – ALGEMENE VOORWAARDEN
@@ -437,11 +468,38 @@ async function createPdf() {
         const avPdfBytes = await fetch(proxyUrl).then(r => r.arrayBuffer());
 
         const avPdf = await PDFDocument.load(avPdfBytes);
-
         const [avPage] = await pdfDoc.copyPages(avPdf, [0]);
 
         pdfDoc.removePage(4);
         pdfDoc.insertPage(4, avPage);
+    }
+    else {
+        pdfDoc.removePage(4);
+    }
+
+    //----------------------------------------------
+    // PAGINA 4 – OFFERTE placeholder
+    //----------------------------------------------
+    const fileInput = document.getElementById("offerteUpload");
+    const uploadedFile = fileInput.files[0];
+
+    let offertePdfBytes = null;
+
+    if (uploadedFile) {
+        offertePdfBytes = await uploadedFile.arrayBuffer();
+    }
+
+    if (offertePdfBytes) {
+
+        const offertePdf = await PDFDocument.load(offertePdfBytes);
+        const [offertePage] = await pdfDoc.copyPages(offertePdf, [0]);
+
+        pdfDoc.removePage(3);
+        pdfDoc.insertPage(3, offertePage);
+
+    } else {
+
+        pdfDoc.removePage(3);
     }
 
     //----------------------------------------------
