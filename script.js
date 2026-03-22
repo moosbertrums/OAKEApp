@@ -2,7 +2,8 @@
     // Label mapping
     //----------------------------------------------
 
-const columnLabelMap = {
+
+    const columnLabelMap = {
 //    deal_expected_close_date: "Verwachte afsluitdatum",
     wereldklok1: "Tijdstip",
     locatie: "Locatie",
@@ -277,7 +278,8 @@ async function createPdf() {
         title: { size: 16, lineHeight: 22 },
         subtitle: { size: 14, lineHeight: 18 },
         body: { size: 10, lineHeight: 14 },
-        small: { size: 9, lineHeight: 12 }
+        small: { size: 9, lineHeight: 12 },
+        fronttitle: { size: 24, lineHeight: 26 }
     };
 
     const spacing = {
@@ -331,7 +333,7 @@ async function createPdf() {
         return y;
     }
 
-    async function drawCenteredImage(page, assetId, widthPadding = 50, heightPadding = 100) {
+    async function drawAssetImage(page, assetId) {
 
         if (!assetId) {
             console.log("Geen image assetId");
@@ -350,15 +352,34 @@ async function createPdf() {
         }
 
         const { width, height } = page.getSize();
+        const scale = Math.max(
+            width / image.width,
+            height / image.height
+        );
 
-        // 🔥 beschikbare ruimte
-        const maxWidth = width - widthPadding * 2;
-        const maxHeight = height - heightPadding * 2;
+        const imgWidth = image.width * scale;
+        const imgHeight = image.height * scale;
 
-        // 🔥 schaal berekenen (fit binnen box)
+        const x = (width - imgWidth) / 2;
+        const y = (height - imgHeight) / 2;
+
+        page.drawImage(image, {
+            x: 0,
+            y: 0,
+            width: width,
+            height: height
+        });
+    }
+
+    async function drawFrameImage(page, imagePath) {
+        const imageBytes = await fetch(imagePath).then(r => r.arrayBuffer());
+        const image = await pdfDoc.embedPng(imageBytes);
+
+        const { width, height } = page.getSize();
+
         const scale = Math.min(
-            maxWidth / image.width,
-            maxHeight / image.height
+            width / image.width,
+            height / image.height
         );
 
         const imgWidth = image.width * scale;
@@ -369,17 +390,19 @@ async function createPdf() {
 
         page.drawImage(image, {
             x,
-            y,
+            y: y + 7,
             width: imgWidth,
             height: imgHeight
         });
     }
-
     //----------------------------------------------
     // PAGINA 1 – FOTO A
     //----------------------------------------------
 
-    await drawCenteredImage(page1, fotoA);
+
+    await drawAssetImage(page1, fotoA);
+    await drawFrameImage(page1, "placeholders/frontpagemask.png");
+    drawWrappedText(page1, selectedTemplate.name, 40, 100, 260, styles.fronttitle.size, styles.fronttitle.lineHeight);
 
 
     //----------------------------------------------
@@ -388,7 +411,7 @@ async function createPdf() {
 
     let y2 = 760;
 
-    draw(page2, selectedTemplate.name, 60, y2, styles.title.size);
+    draw(page2, "Over ons", 60, y2, styles.title.size);
     y2 -= spacing.block;
     y2 = drawWrappedText(page2, tekstA, 60, y2, 480, styles.body.size, styles.body.lineHeight);
     y2 -= spacing.block;
@@ -506,7 +529,8 @@ async function createPdf() {
     // PAGINA 6 – FOTO B
     //----------------------------------------------
 
-    await drawCenteredImage(page6, fotoB);
+    await drawAssetImage(page6, fotoB);
+    await drawFrameImage(page6, "placeholders/backpagemask.png")
 
     //----------------------------------------------
     // SAVE
