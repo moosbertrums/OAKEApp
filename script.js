@@ -270,8 +270,6 @@ async function createPdf() {
     const page1 = pages[0];
     const page2 = pages[1];
     const page3 = pages[2];
-    const page4 = pages[3];
-    const page5 = pages[4];
     const page6 = pages[5];
 
     const styles = {
@@ -364,8 +362,8 @@ async function createPdf() {
         const y = (height - imgHeight) / 2;
 
         page.drawImage(image, {
-            x: 0,
-            y: 0,
+            x: x,
+            y: y,
             width: width,
             height: height
         });
@@ -478,7 +476,7 @@ async function createPdf() {
 
     draw(page3, "Over het project", 60, y3, styles.title.size);
     y3 -= spacing.block;
-    y3 = drawWrappedText(page3, tekstB, 60, y3, 480, styles.body.size, styles.body.lineHeight);
+    drawWrappedText(page3, tekstB, 60, y3, 480, styles.body.size, styles.body.lineHeight);
 
 
     //----------------------------------------------
