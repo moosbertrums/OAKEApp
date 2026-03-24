@@ -4,15 +4,9 @@
 
 
     const columnLabelMap = {
-//    deal_expected_close_date: "Verwachte afsluitdatum",
     wereldklok1: "Tijdstip",
     locatie: "Locatie",
-//    deal_stage: "Sales status",
     deal_owner: "OAKE Contactpersoon",
-//    status4: "Aanvraagstatus",
-//    lange_tekst0__1: "Omschrijving",
-//    deal_creation_date: "Aanmaakdatum",
-//    deal_close_date: "Sluitdatum",
     nummers7: "PAX Lunch",
     nummers5: "PAX Diner",
     nummers4: "PAX Drank",
