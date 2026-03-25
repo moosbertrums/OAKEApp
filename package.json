@@ -1,21 +1,15 @@
 {
   "name": "oakeapp",
   "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+  "type": "module",
+  "engines": {
+    "node": "22.x"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "18": "^0.0.0",
-    "cors": "^2.8.5",
-    "dotenv": "^17.3.1",
-    "express": "^5.1.0",
     "node-fetch": "^3.3.2",
-    "pdf-lib": "^1.17.1"
+    "dotenv": "^17.3.1"
   },
-  "description": ""
+  "scripts": {
+    "start": "node server.js"
+  }
 }

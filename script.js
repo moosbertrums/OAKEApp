@@ -17,21 +17,24 @@
     // Backend proxy fetch
     //----------------------------------------------
 
-async function mondayFetch(query) {
-    const res = await fetch("http://localhost:3000/monday", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query })
-    });
+    const API_BASE = window.location.origin;
 
-    const json = await res.json();
+    async function mondayFetch(query) {
+        const res = await fetch(`${API_BASE}/monday`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query })
+        });
 
-    if (json.errors) {
-        console.error("GraphQL errors:", json.errors);
-        return null;
+        const json = await res.json();
+
+        if (json.errors) {
+            console.error("GraphQL errors:", json.errors);
+            return null;
+        }
+
+        return json;
     }
-    return json;
-}
 
     //----------------------------------------------
     // Haal hoofdboard op
@@ -332,7 +335,7 @@ async function createPdf() {
             return;
         }
 
-        const proxyUrl = `http://localhost:3000/file-by-asset?assetId=${assetId}`;
+        const proxyUrl = `${API_BASE}/file-by-asset?assetId=${assetId}`;
         const bytes = await fetch(proxyUrl).then(r => r.arrayBuffer());
 
         let image;
@@ -479,9 +482,8 @@ async function createPdf() {
 
     if (avFile) {
 
-        const proxyUrl = `http://localhost:3000/file-by-asset?assetId=${avFile}`;
+        const proxyUrl = `${API_BASE}/file-by-asset?assetId=${avFile}`;
         const avPdfBytes = await fetch(proxyUrl).then(r => r.arrayBuffer());
-
         const avPdf = await PDFDocument.load(avPdfBytes);
         const [avPage] = await pdfDoc.copyPages(avPdf, [0]);
 

@@ -1,45 +1,48 @@
 export default async function handler(req, res) {
-    const assetId = req.query.assetId;
-
-    const MONDAY_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjI0MjMwMjkxMywiYWFpIjoxMSwidWlkIjo0MDQ0MjIxMSwiaWFkIjoiMjAyMy0wMy0wN1QxNToyMzo1MS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTU2ODgxNDEsInJnbiI6ImV1YzEifQ.fbe2Ahr3rwxy0fCVeOtXeRrkaLxNApITXm3t2aVbUII";
+    const { assetId } = req.query;
 
     if (!assetId) {
         return res.status(400).send("Missing assetId");
     }
 
     try {
-        const query = `
-        {
-            assets(ids: [${assetId}]) {
-                public_url
-                url
-            }
-        }`;
-
-        const response = await fetch("https://api.monday.com/v2", {
+        // 1. Vraag asset URL op via Monday
+        const mondayRes = await fetch("https://api.monday.com/v2", {
             method: "POST",
             headers: {
-                "Authorization": MONDAY_TOKEN,
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": process.env.MONDAY_TOKEN
             },
-            body: JSON.stringify({ query })
+            body: JSON.stringify({
+                query: `
+                {
+                    assets(ids: [${assetId}]) {
+                        public_url
+                        url
+                    }
+                }`
+            })
         });
 
-        const json = await response.json();
-        const asset = json.data.assets[0];
+        const json = await mondayRes.json();
+        const asset = json?.data?.assets?.[0];
+
+        if (!asset) {
+            return res.status(404).send("Asset not found");
+        }
 
         const fileUrl = asset.public_url || asset.url;
 
-        const fileResponse = await fetch(fileUrl);
-        const buffer = await fileResponse.arrayBuffer();
+        // 2. Fetch file vanaf S3 (server-side → geen CORS)
+        const fileRes = await fetch(fileUrl);
 
-        res.setHeader("Content-Type", fileResponse.headers.get("content-type"));
-        res.setHeader("Access-Control-Allow-Origin", "*");
+        const buffer = await fileRes.arrayBuffer();
 
-        res.status(200).send(Buffer.from(buffer));
+        res.setHeader("Content-Type", fileRes.headers.get("content-type"));
+        res.send(Buffer.from(buffer));
 
     } catch (err) {
         console.error(err);
-        res.status(500).send("Asset fetch failed");
+        res.status(500).send("Error fetching asset");
     }
 }
