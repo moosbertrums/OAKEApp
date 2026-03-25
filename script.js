@@ -335,7 +335,7 @@ async function createPdf() {
             return;
         }
 
-        const proxyUrl = `${API_BASE}/file-by-asset?assetId=${assetId}`;
+        const proxyUrl = `${API_BASE}/api/file-by-asset?assetId=${assetId}`;
         const bytes = await fetch(proxyUrl).then(r => r.arrayBuffer());
 
         let image;
@@ -482,7 +482,7 @@ async function createPdf() {
 
     if (avFile) {
 
-        const proxyUrl = `${API_BASE}/file-by-asset?assetId=${avFile}`;
+        const proxyUrl = `${API_BASE}/api/file-by-asset?assetId=${avFile}`;
         const avPdfBytes = await fetch(proxyUrl).then(r => r.arrayBuffer());
         const avPdf = await PDFDocument.load(avPdfBytes);
         const [avPage] = await pdfDoc.copyPages(avPdf, [0]);
