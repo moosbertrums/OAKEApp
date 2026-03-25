@@ -1,8 +1,13 @@
 import fetch from "node-fetch";
 
-const MONDAY_TOKEN = process.env.MONDAY_TOKEN;
 
 export default async function handler(req, res) {
+    const MONDAY_TOKEN = process.env.MONDAY_TOKEN;
+
+    if (!MONDAY_TOKEN) {
+        return res.status(500).json({ error: "MONDAY_TOKEN is not defined" });
+    }
+
     res.setHeader("Access-Control-Allow-Origin", "https://app.ovenaan.nl"); // jouw frontend
     res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
