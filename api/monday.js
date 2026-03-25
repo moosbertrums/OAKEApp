@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 
-const MONDAY_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjI0MjMwMjkxMywiYWFpIjoxMSwidWlkIjo0MDQ0MjIxMSwiaWFkIjoiMjAyMy0wMy0wN1QxNToyMzo1MS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTU2ODgxNDEsInJnbiI6ImV1YzEifQ.fbe2Ahr3rwxy0fCVeOtXeRrkaLxNApITXm3t2aVbUII";
+const MONDAY_TOKEN = process.env.MONDAY_TOKEN;
 
 export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", "https://app.ovenaan.nl"); // jouw frontend

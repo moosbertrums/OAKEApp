@@ -1,7 +1,7 @@
-const MONDAY_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjI0MjMwMjkxMywiYWFpIjoxMSwidWlkIjo0MDQ0MjIxMSwiaWFkIjoiMjAyMy0wMy0wN1QxNToyMzo1MS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTU2ODgxNDEsInJnbiI6ImV1YzEifQ.fbe2Ahr3rwxy0fCVeOtXeRrkaLxNApITXm3t2aVbUII";
+const MONDAY_TOKEN = process.env.MONDAY_TOKEN;
 
 export default async function handler(req, res) {
-    // CORS
+
     res.setHeader("Access-Control-Allow-Origin", "https://app.ovenaan.nl");
     res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
