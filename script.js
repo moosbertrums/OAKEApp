@@ -17,7 +17,7 @@
     // Backend proxy fetch
     //----------------------------------------------
 
-    const API_BASE = window.location.origin;
+    const API_BASE = "https://oake-app.vercel.app";
 
     async function mondayFetch(query) {
         const res = await fetch(`${API_BASE}/monday`, {
