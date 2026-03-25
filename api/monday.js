@@ -3,12 +3,10 @@ import fetch from "node-fetch";
 const MONDAY_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjI0MjMwMjkxMywiYWFpIjoxMSwidWlkIjo0MDQ0MjIxMSwiaWFkIjoiMjAyMy0wMy0wN1QxNToyMzo1MS4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTU2ODgxNDEsInJnbiI6ImV1YzEifQ.fbe2Ahr3rwxy0fCVeOtXeRrkaLxNApITXm3t2aVbUII";
 
 export default async function handler(req, res) {
-    // --- CORS headers ---
     res.setHeader("Access-Control-Allow-Origin", "https://app.ovenaan.nl"); // jouw frontend
     res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-    // Preflight check
     if (req.method === "OPTIONS") {
         return res.status(200).end();
     }
